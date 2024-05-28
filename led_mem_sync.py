@@ -22,6 +22,10 @@ def set_color(start_led, end_led, red, green, blue):
     for i in range(start_led, end_led+1):
         mem[0].leds[i].set(r=red, g=green, b=blue)
 
+def set_all_color(red, green, blue):
+    set_color(0, 11, red, green, blue)
+    mem[0].write_data(None)
+
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
 
@@ -39,9 +43,13 @@ if __name__ == '__main__':
         # Get LED memory and write to it
         mem = cf.mem.get_mems(MemoryElement.TYPE_DRIVER_LED)
         if len(mem) > 0:
-            set_color(0, 2, 100, 0, 0)
-            set_color(3, 5, 0, 100, 0)
-            set_color(6, 8, 0, 0, 100)
-            set_color(9, 11, 100, 100, 100)
-            mem[0].write_data(None)
+            for i in range(1,10+1):
+                set_all_color(100, 0, 0)
+                time.sleep(3)
+                set_all_color(0, 100, 0)
+                time.sleep(3)
+                set_all_color(0, 0, 100)
+                time.sleep(3)
+                set_all_color(100, 100, 100)
+                time.sleep(3)
         time.sleep(0.5)
