@@ -42,20 +42,14 @@ uri = uri_helper.uri_from_env(default='radio://0/80/2M/EE5C21CFA6')
 def simple_sequence():
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         with PositionHlCommander(scf, controller=PositionHlCommander.CONTROLLER_PID) as pc:
-            for _ in range(2):
-                pc.forward(0.5)
-                pc.left(0.5)
-                pc.back(0.5)
-                pc.right(0.5)
+            for _ in range(1):
                 time.sleep(2)
-                pc.forward(0.5)
-                pc.back(0.5)
+                pc.go_to(0.0, 0.0, 1.0)
                 time.sleep(2)
-                pc.go_to(0.5, 0.5, 1.0)
-                time.sleep(2)
-                pc.go_to(0.0, 0.0, 0.5)
+                pc.go_to(0.5, 0.5, 0.5)
                 time.sleep(2)
                 pc.go_to(0.0, 0.0, 0.3)
+                time.sleep(2)
 
 
 if __name__ == '__main__':
