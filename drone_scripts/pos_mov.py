@@ -50,6 +50,8 @@ def simple_sequence():
                 time.sleep(2)
                 pc.go_to(0.0, 0.0, 0.3)
                 time.sleep(2)
+                pc.go_to(0.0, 0.0, 0.1)
+                time.sleep(0.5)
 
 
 if __name__ == '__main__':
