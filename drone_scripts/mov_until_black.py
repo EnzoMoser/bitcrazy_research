@@ -54,10 +54,10 @@ def grab_x_y_z_ax_ay_shut():
     return np.float16(globX/1000), np.float16(globY/1000), np.float16(globZ/1000), np.float16(globAx/1000), np.float16(globAy/1000), np.uint16(globShut)
 
 def black_or_white(last_color_white):
-    x, y, z, shut = grab_log_values()
+    x, y, z, shut = grab_x_y_z_shut()
     print("X: %.2f\tShut: %d" % ( x, shut ) )
 #    print(shut)
-    if shut > 2000:
+    if shut > 4000:
         cur_color_white = False
     else:
         cur_color_white = True
@@ -68,11 +68,9 @@ def black_or_white(last_color_white):
             print("Black!")
     return cur_color_white
 
-def mov_to(pc, x, y, z)
-    cur_x, cur_y, cur_z, _ = grab_log_values()
+def mov_to(pc, x, y, z):
+    cur_x, cur_y, cur_z, _ = grab_x_y_z_shut()
     
-
-
 def mov_until_black(scf, pc, logconf):
     cf = scf.cf
     cf.log.add_config(logconf)
@@ -82,7 +80,7 @@ def mov_until_black(scf, pc, logconf):
     time.sleep(0.3)
     pc.go_to(0.0, 0.0, 0.5)
     time.sleep(0.3)
-    x, y, _, _ = grab_log_values()
+    x, y, _, _ = grab_x_y_z_shut()
     pc.go_to(x, y, 0.3)
     time.sleep(0.3)
     pc.go_to(x, y, 0.1)
@@ -109,6 +107,9 @@ if __name__ == '__main__':
     lg_stab.add_variable('stateEstimateZ.x', 'int16_t')
     lg_stab.add_variable('stateEstimateZ.y', 'int16_t')
     lg_stab.add_variable('stateEstimateZ.z', 'int16_t')
+
+    lg_stab.add_variable('stateEstimateZ.ax', 'int16_t')
+    lg_stab.add_variable('stateEstimateZ.ay', 'int16_t')
 
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         with PositionHlCommander(scf, controller=PositionHlCommander.CONTROLLER_PID) as pc:
