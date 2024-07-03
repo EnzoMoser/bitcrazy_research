@@ -12,7 +12,6 @@ from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 
 from cflib.crazyflie.log import LogConfig
-from cflib.crazyflie.syncLogger import SyncLogger
 
 from cflib.positioning.position_hl_commander import PositionHlCommander
 
@@ -28,18 +27,20 @@ uri = uri_helper.uri_from_env(default='radio://0/80/2M/EE5C21CFA6')
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
 
-# Python does not have constants. 
-log_check_in_ms = 81
+# Python does not have constants.
+log_check_in_ms = 50
 log_check = log_check_in_ms / 1000
 wait_time = log_check    # Time to wait before checking log.
 flying_height = 0.16 # In meters
-default_velocity = 0.1 # In m/s
-shutter_speed_lim = 2500     # Shutter speed is between 0 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
+default_velocity = 0.2 # In m/s
+shutter_speed_lim = 2300     # Shutter speed is between 0 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
 tolerance_radius = 0.03     # In meters. The desired drone coords must be within this radius
 accel_tol = 0.05
 
 # Initialize the low-level drivers
 cflib.crtp.init_drivers()
+
+context_resources = []
 
 # Add resources to the context manager for the duration of the script
 def add_to_context_manager(target):
@@ -55,11 +56,19 @@ def add_to_context_manager(target):
         if not exit(target, *sys.exc_info()):
             raise
     if not hit_except:
+        context_resources.append(target)
         def leave_target():
             exit(target, None, None, None)
         # The target will only leave context manager if interrupted.
         atexit.register( leave_target )
     return item
+
+def leave_all_targets():
+    # Exit all context managers manually
+    while context_resources:
+        target = context_resources.pop()
+        exit = type(target).__exit__
+        exit(target, *sys.exc_info())
 
 # Connect to Crazyflie
 scf = add_to_context_manager( SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) )
@@ -74,6 +83,7 @@ def manual_exit():
         pc.__exit__(*sys.exc_info() )
     if 'scf' in globals():
         scf.__exit__(*sys.exc_info() )
+    leave_all_targets()
 atexit.register( manual_exit )
 
 ##### Create log configuration
@@ -82,6 +92,7 @@ def is_logging():
     return are_we_logging
 lg_stab = LogConfig(name='Light_Level_At_Location', period_in_ms=log_check_in_ms)
 lg_stab.add_variable('motion.shutter', 'uint16_t')
+lg_stab.add_variable('pm.batteryLevel', 'uint8_t')
 lg_stab.add_variable('stateEstimateZ.x', 'int16_t')
 lg_stab.add_variable('stateEstimateZ.y', 'int16_t')
 lg_stab.add_variable('stateEstimateZ.z', 'int16_t')
@@ -106,6 +117,13 @@ def log_stab_callback(timestamp, data, _):
     globVy = np.int16(data['stateEstimateZ.vy'])
     # Shutter speed (Detects light)
     globShut = np.uint16(data['motion.shutter'])
+    battery = np.uint8(data['pm.batteryLevel'])
+
+    if battery < 10:
+        print("WARNING: Battery Level at ", battery, "%. Shutting Down...")
+        manual_exit()
+        raise Exception("LOW BATTERY")
+
     are_we_logging = True
 
 logconf = lg_stab
