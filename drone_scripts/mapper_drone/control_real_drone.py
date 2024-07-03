@@ -31,11 +31,12 @@ logging.basicConfig(level=logging.ERROR)
 # Python does not have constants. 
 log_check_in_ms = 81
 log_check = log_check_in_ms / 1000
-wait_time = log_check*1.3    # Time to wait before checking log.
-flying_height = 0.1 # In meters
-shutter_speed_lim = 3000     # Shutter speed is between 0 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
-tolerance_radius = 0.02     # In meters. The desired drone coords must be within this radius
-accel_tol = 0.02
+wait_time = log_check    # Time to wait before checking log.
+flying_height = 0.16 # In meters
+default_velocity = 0.1 # In m/s
+shutter_speed_lim = 2500     # Shutter speed is between 0 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
+tolerance_radius = 0.03     # In meters. The desired drone coords must be within this radius
+accel_tol = 0.05
 
 # Initialize the low-level drivers
 cflib.crtp.init_drivers()
@@ -64,8 +65,8 @@ def add_to_context_manager(target):
 scf = add_to_context_manager( SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) )
 # Setup the position commander. Will fly up once initialized. Will land once the script exits.
 pc = add_to_context_manager( PositionHlCommander(scf, controller=PositionHlCommander.CONTROLLER_PID) )
-pc.set_default_height(0.1) # Default height in meters
-pc.set_default_velocity(0.15) # Default velocity in m/s
+pc.set_default_height(flying_height) # Default height in meters
+pc.set_default_velocity(default_velocity) # Default velocity in m/s
 
 # Make sure to manually exit, otherwise the script will keep running.
 def manual_exit():
@@ -142,13 +143,12 @@ def mov(new_x, new_y):
         pc.go_to(new_x, new_y)
         time.sleep(wait_time)
         x, y, vx, vy, shut = grab_x_y_vx_vy_shut()
-        if shut > shutter_speed_lim:
-            color_black = True
-        else:
-            color_black = False
+    print("Shut: ", shut)
+    if shut > shutter_speed_lim:
+        color_black = True
+    else:
+        color_black = False
     return x, y, color_black
 
 if __name__ == '__main__':
     print("You are NOT supposed to run this!")
-
-
