@@ -87,15 +87,17 @@ def size_check(coord, bg, sm):
     return bg, sm
 
 def real_to_vis(real):
-    vis = ( np.round( real * rv_mult ) + rv_off ).astype(int)
+    vis = ( np.ceil( real * rv_mult ) + rv_off ).astype(int)
     return vis
 
 def vis_to_real(vis):
-    real = ( np.round( (vis - rv_off) / rv_mult ) ).astype(int)
+    real = ( (vis - rv_off) / rv_mult ).astype(float)
     return real
 
 
 def scan_area( ):
+
+    global rv_mult, rv_off, vis_start, vis_img, vis_drone_coord, vis_size
 
     vis_starting_size = 20
     vis_increase_size = 2
@@ -152,42 +154,47 @@ def scan_area( ):
                 next_coord = da_list[i]
                 break
         if next_coord.size > 0:
-            test_drone_coord = drone_coord + np.multiply( dir[ np.int8(next_coord[2]), :2 ], move_length )
-            vis_test_drone_coord = ( np.ceil( test_drone_coord * rv_mult ) + rv_off ).astype(int)
+            #test_drone_coord = drone_coord + np.multiply( dir[ np.int8(next_coord[2]), :2 ], move_length )
+            #vis_test_drone_coord = real_to_vis(test_drone_coord)
+            test_drone_coord = vis_to_real(next_coord[:2])
+            vis_test_drone_coord = next_coord[:2]
 
             old_drone_coord = drone_coord
-            success = mov(test_drone_coord) 
+            success = mov(test_drone_coord)
 
             if success:
                 vis_drone_coord = vis_test_drone_coord
                 stack = np.append(stack, [ next_coord ], axis=0)
                 use_color = line_color
+                display_drone(vis_img, vis_drone_coord)
             else:
                 display_bad_drone(vis_img, vis_test_drone_coord)
-                mov(old_drone_coord)
+                #mov(old_drone_coord)
                 use_color = border_color
 
             set_pixel(vis_img, vis_test_drone_coord, use_color)
 
         else:
-            back_coord = stack[-1]
+            #back_coord = stack[-1]
             stack = np.delete(stack, -1, axis=0)
-            if stack.shape[0] > 1:
-                match back_coord[2]:
-                    case 0:
-                        back_coord[2] = 2
-                    case 1:
-                        back_coord[2] = 3
-                    case 2:
-                        back_coord[2] = 0
-                    case 3:
-                        back_coord[2] = 1
-                test_drone_coord = drone_coord + np.multiply( dir[ np.int8(back_coord[2]), :2 ], move_length )
-                vis_drone_coord = ( np.ceil( test_drone_coord * rv_mult ) + rv_off ).astype(int)
-                success = mov(test_drone_coord)
-                if not success:
-                    print("ERROR: Drone detecting black color when this position should show white")
-        display_drone(vis_img, vis_drone_coord)
+            #if stack.shape[0] > 1:
+            #    match back_coord[2]:
+            #        case 0:
+            #            back_coord[2] = 2
+            #        case 1:
+            #            back_coord[2] = 3
+            #        case 2:
+            #            back_coord[2] = 0
+            #        case 3:
+            #            back_coord[2] = 1
+                #test_drone_coord = drone_coord + np.multiply( dir[ np.int8(back_coord[2]), :2 ], move_length )
+                #vis_drone_coord = real_to_vis(test_drone_coord)
+                #test_drone_coord = vis_to_real(back_coord[:2])
+                #vis_test_drone_coord = back_coord[:2]
+
+                #success = mov(test_drone_coord)
+                #if not success:
+                #    print("ERROR: Drone detecting black color when this position should show white")
 
     ### Shrink the map
     # Get the first not unknown pixel from each side.
@@ -303,21 +310,17 @@ def create_end_point():
                 d = get_dis(vis_start, check_me)
                 if d > max_d:
                     max_d = d
-                    point = check_me
+                    point = np.array([j, i])
+    global vis_end
     vis_end = point
+    print("End: ", vis_end)
     set_pixel(vis_img, vis_end, end_color)
     display_drone(vis_img, vis_drone_coord)
 
 cake = get_coords()
 mov(cake)
 drone_coord = get_coords()
-rv_mult = None
-rv_off = None
-vis_start = None
-vis_end = None
-vis_img = None
-vis_drone_coord = None
-vis_size = None
+
 scan_area()
 create_end_point()
 
