@@ -377,25 +377,26 @@ def mov_between_coords(temp_img, start_point, end_point):
         print("No PATH! Cannot Move!")
         return False, temp_img
     new_temp = False
+    old_coord = start_point
     while True:
-        old_coord = start_point
         for coord in path:
             #print("Moving to ", coord)
             good_cor = vis_mov(temp_img, coord)
             if not ( (coord == start_point).all() or (coord == end_point).all() ):
                 if not good_cor:
-                    print("Fail")
+                    print("Blocked")
                     if not new_temp:
                         temp_img = vis_img.copy()
                         new_temp = True
                     set_pixel(temp_img, coord, new_obstacle_color)
                     vis_mov(temp_img, old_coord)
+                    start_point = old_coord
                     break
                 else:
                     old_coord = coord
         if (vis_drone_coord == end_point).all():
             return True, temp_img
-        path = bfs_path(temp_img, old_coord, end_point, bad_colors)
+        path = bfs_path(temp_img, start_point, end_point, bad_colors)
         if path is None:
             print("No PATH! Cannot Move!")
             return False, temp_img

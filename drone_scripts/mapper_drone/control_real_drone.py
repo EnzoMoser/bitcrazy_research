@@ -33,9 +33,10 @@ log_check = log_check_in_ms / 1000
 wait_time = log_check    # Time to wait before checking log.
 flying_height = 0.16 # In meters
 default_velocity = 0.2 # In m/s
-shutter_speed_lim = 3000     # Shutter speed is between 900 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
-tolerance_radius = 0.03     # In meters. The desired drone coords must be within this radius
-accel_tol = 0.05
+# It should be noted that the shutter_speed_lim was changed from ~3500 to 4000 for the second shot, in order to stop accidental blocking.
+shutter_speed_lim = 4000     # Shutter speed is between 900 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
+tolerance_radius = 0.02     # In meters. The desired drone coords must be within this radius
+accel_tol = 0.04
 
 # Initialize the low-level drivers
 cflib.crtp.init_drivers()
@@ -163,12 +164,12 @@ def mov(new_x, new_y):
         x, y, vx, vy, shut = grab_x_y_vx_vy_shut()
     if shut == 900:
         print("WARNING!!! Shutter speed stuck at 900! Please Restart Drone!")
-    else:
-        print("Light Level: ", shut)
     if shut > shutter_speed_lim:
         color_black = True
+        print("Light Lvl: ", shut, "\tBLACK")
     else:
         color_black = False
+        print("Light Lvl: ", shut, "\tWHITE")
     return x, y, color_black
 
 if __name__ == '__main__':
