@@ -123,7 +123,7 @@ def scan_area( ):
     display_drone(vis_img, vis_drone_coord)
 
     rv_mult = np.float32( 1 / move_length )
-    rv_off = ( vis_drone_coord - np.ceil( np.multiply(drone_coord, rv_mult)) ).astype(int)
+    rv_off = vis_drone_coord - np.multiply(drone_coord, rv_mult)
 
     stack = np.array( [ [ vis_drone_coord[0], vis_drone_coord[1], 4 ] ] )
 
@@ -380,7 +380,7 @@ def mov_between_coords(temp_img, start_point, end_point):
     while True:
         old_coord = start_point
         for coord in path:
-            print("Moving to ", coord)
+            #print("Moving to ", coord)
             good_cor = vis_mov(temp_img, coord)
             if not ( (coord == start_point).all() or (coord == end_point).all() ):
                 if not good_cor:
@@ -391,7 +391,8 @@ def mov_between_coords(temp_img, start_point, end_point):
                     set_pixel(temp_img, coord, new_obstacle_color)
                     vis_mov(temp_img, old_coord)
                     break
-            old_coord = coord
+                else:
+                    old_coord = coord
         if (vis_drone_coord == end_point).all():
             return True, temp_img
         path = bfs_path(temp_img, old_coord, end_point, bad_colors)
@@ -410,21 +411,22 @@ if USE_LOADED_IMAGE and os.path.isfile('vis_img.png'):
     vis_end = find_first_instance(vis_img, end_color)
     vis_drone_coord = vis_start
     rv_mult = np.float32( 1 / move_length )
-    rv_off = ( vis_drone_coord - np.ceil( np.multiply(drone_coord, rv_mult)) ).astype(int)
+    rv_off = vis_drone_coord - np.multiply(drone_coord, rv_mult)
+
+    temp = vis_img.copy()
+    display_drone(temp, vis_drone_coord)
+    while True:
+        rof, temp = mov_between_coords(temp, vis_start, vis_end)
+        if not rof:
+            break
+        rof, temp = mov_between_coords(temp, vis_end, vis_start)
+        if not rof:
+            break
 else:
     scan_area()
     create_end_point()
     vis_img.save('vis_img.png')
 
-temp = vis_img.copy()
-while True:
-    rof, temp = mov_between_coords(temp, vis_start, vis_end)
-    if not rof:
-        break
-    rof, temp = mov_between_coords(temp, vis_end, vis_start)
-    if not rof:
-        break
-
 print("DONE!!!")
 dn.manual_exit()
-time.sleep(9999)
+time.sleep(5)
