@@ -1,3 +1,10 @@
+# GNU General Public License
+
+"""
+Requires Flow Deck. Prints black or white based on shutter speed.
+Does not fly, so you can hold the drone when doing this.
+"""
+
 import logging
 import time
 import numpy as np

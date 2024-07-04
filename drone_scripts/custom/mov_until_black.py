@@ -1,7 +1,7 @@
 # GNU General Public License
 
 """
-This script moves the drone forward until it detects the color black.
+Requires the Flow Deck. This script moves the drone forward until it detects the color black.
 """
 
 import time

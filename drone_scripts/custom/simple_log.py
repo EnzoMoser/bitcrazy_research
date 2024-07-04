@@ -1,3 +1,9 @@
+# GNU General Public License
+
+"""
+Requires Flow Deck and an Absolute Positioning Sytem. Outputs the shutter speed and current coordinates.
+Does not fly, so you can hold the drone when doing this.
+"""
 import logging
 import time
 
