@@ -1,11 +1,15 @@
-import control_real_drone as dn
 import sys
+import os
 import atexit
 import time
 import numpy as np
 import signal
 from PIL import Image
 import matplotlib.pyplot as plt
+from collections import deque
+import control_real_drone as dn
+
+USE_LOADED_IMAGE = True
 
 atexit.register( dn.manual_exit )
 
@@ -22,10 +26,13 @@ move_length = np.float16(0.08) # Move length in meters
 border_color = (0, 0, 0)
 line_color = (255, 255, 255)
 unknown_color = (130, 130, 200)
-drone_color = (255, 0, 255)
-bad_drone_color = (200, 0, 150)
+new_obstacle_color = (255, 0, 0)
+drone_color = (0, 255, 0)
+bad_drone_color = (255, 0, 255)
 start_color = (0, 255, 255)
 end_color = (255, 255, 0)
+
+bad_colors = { border_color, unknown_color, new_obstacle_color }
 
 # Setup the matplotlib figure and axis
 plt.ion()  # Turn on interactive mode
@@ -96,7 +103,6 @@ def vis_to_real(vis):
 
 
 def scan_area( ):
-
     global rv_mult, rv_off, vis_start, vis_img, vis_drone_coord, vis_size
 
     vis_starting_size = 20
@@ -112,8 +118,8 @@ def scan_area( ):
     old_big = vis_big    
 
     vis_img = Image.new('RGB', (vis_size, vis_size), unknown_color)
-    vis_start = vis_drone_coord
-    set_pixel(vis_img, vis_start, start_color)
+    start_drone_coord = drone_coord
+    set_pixel(vis_img, vis_drone_coord, start_color)
     display_drone(vis_img, vis_drone_coord)
 
     rv_mult = np.float32( 1 / move_length )
@@ -121,7 +127,7 @@ def scan_area( ):
 
     stack = np.array( [ [ vis_drone_coord[0], vis_drone_coord[1], 4 ] ] )
 
-    while stack.shape[0] > 0:
+    while stack.shape[0] > 0:        
         da_list = dir + np.array( [ stack[-1, 0 ], stack[-1, 1 ], 0 ] )
         next_coord = np.array( [] )
         for i in range(4):
@@ -154,8 +160,6 @@ def scan_area( ):
                 next_coord = da_list[i]
                 break
         if next_coord.size > 0:
-            #test_drone_coord = drone_coord + np.multiply( dir[ np.int8(next_coord[2]), :2 ], move_length )
-            #vis_test_drone_coord = real_to_vis(test_drone_coord)
             test_drone_coord = vis_to_real(next_coord[:2])
             vis_test_drone_coord = next_coord[:2]
 
@@ -169,32 +173,12 @@ def scan_area( ):
                 display_drone(vis_img, vis_drone_coord)
             else:
                 display_bad_drone(vis_img, vis_test_drone_coord)
-                #mov(old_drone_coord)
                 use_color = border_color
 
             set_pixel(vis_img, vis_test_drone_coord, use_color)
 
         else:
-            #back_coord = stack[-1]
             stack = np.delete(stack, -1, axis=0)
-            #if stack.shape[0] > 1:
-            #    match back_coord[2]:
-            #        case 0:
-            #            back_coord[2] = 2
-            #        case 1:
-            #            back_coord[2] = 3
-            #        case 2:
-            #            back_coord[2] = 0
-            #        case 3:
-            #            back_coord[2] = 1
-                #test_drone_coord = drone_coord + np.multiply( dir[ np.int8(back_coord[2]), :2 ], move_length )
-                #vis_drone_coord = real_to_vis(test_drone_coord)
-                #test_drone_coord = vis_to_real(back_coord[:2])
-                #vis_test_drone_coord = back_coord[:2]
-
-                #success = mov(test_drone_coord)
-                #if not success:
-                #    print("ERROR: Drone detecting black color when this position should show white")
 
     ### Shrink the map
     # Get the first not unknown pixel from each side.
@@ -292,11 +276,13 @@ def scan_area( ):
 
     vis_img = Image.fromarray(new_vis_arr)
     vis_size = vis_img.width
-
+    mov( start_drone_coord )
+    vis_drone_coord = real_to_vis(start_drone_coord)
+    vis_start = vis_drone_coord
     display_drone(vis_img, vis_drone_coord)
 
 def get_dis(p1, p2):
-    return int( np.sqrt( ((p1[0]-p2[0])**2) + ((p1[1]-p2[1])**2)  ) )
+    return abs(p1[0]-p2[0]) + abs(p1[1]-p2[1])
 
 def create_end_point():
     line_arr = np.array(line_color)
@@ -305,24 +291,139 @@ def create_end_point():
     point = np.array([])
     for i in range(vis_size):
         for j in range(vis_size):
-            check_me = vis_arr[i, j]
+            check_me = vis_arr[j, i]
             if (line_arr == check_me ).all():
-                d = get_dis(vis_start, check_me)
+                d = get_dis(vis_start, np.array( [i, j] ))
                 if d > max_d:
                     max_d = d
-                    point = np.array([j, i])
+                    point = np.array([i, j])
     global vis_end
     vis_end = point
-    print("End: ", vis_end)
-    set_pixel(vis_img, vis_end, end_color)
+    if vis_end.size <= 0:
+        print("No End point!")
+    else:
+        print("End: ", vis_end)
+        set_pixel(vis_img, vis_end, end_color)
     display_drone(vis_img, vis_drone_coord)
+
+def bfs_path(img, start_coord, end_coord, b_colors):
+    # Initialize the BFS queue
+    queue = deque([start_coord])
+    visited = set()
+    visited.add(tuple(start_coord))
+    
+    # Dictionary to keep track of the path
+    came_from = {}
+    came_from[tuple(start_coord)] = None
+    
+    # Define the four cardinal directions
+    directions = [np.array([1, 0]), np.array([-1, 0]), np.array([0, 1]), np.array([0, -1])]
+    
+    # Get image dimensions
+    width, height = img.size
+    
+    while queue:
+        current = queue.popleft()
+        
+        # Check if we have reached the end
+        if np.array_equal(current, end_coord):
+            path = []
+            while current is not None:
+                path.append(current)
+                current = came_from[tuple(current)]
+            return np.array(path[::-1])  # Return reversed path
+        
+        # Explore neighbors
+        for direction in directions:
+            neighbor = current + direction
+            neighbor_tuple = tuple(neighbor)
+            
+            # Check bounds
+            if (0 <= neighbor[0] < width) and (0 <= neighbor[1] < height):
+                # Check if the neighbor is not a bad color and not visited
+                da_pixel = img.getpixel((neighbor[0], neighbor[1]))
+                if neighbor_tuple not in visited and da_pixel not in b_colors:
+                    queue.append(neighbor)
+                    visited.add(neighbor_tuple)
+                    came_from[neighbor_tuple] = tuple(current)
+    
+    # Return None if no path is found
+    return None
+
+def find_first_instance(img, color):
+    arr = np.array(img)
+    for y in range(img.height):
+        for x in range(img.width):
+            if (arr[y, x] == color).all():  # RGB value for white
+                return np.array( [x, y] )
+    
+    # If no white pixel is found
+    return None
+
+def vis_mov(img, vis_coord):
+    good_cor = mov ( vis_to_real(vis_coord) )
+    global vis_drone_coord
+    vis_drone_coord = vis_coord
+    if good_cor:
+        display_drone(img, vis_drone_coord)
+    else:
+        display_bad_drone(img, vis_drone_coord)
+    return good_cor
+
+def mov_between_coords(temp_img, start_point, end_point):
+    path = bfs_path(temp_img, start_point, end_point, bad_colors)
+    vis_mov(temp_img, start_point)
+    if path is None:
+        print("No PATH! Cannot Move!")
+        return False, temp_img
+    new_temp = False
+    while True:
+        old_coord = start_point
+        for coord in path:
+            print("Moving to ", coord)
+            good_cor = vis_mov(temp_img, coord)
+            if not ( (coord == start_point).all() or (coord == end_point).all() ):
+                if not good_cor:
+                    print("Fail")
+                    if not new_temp:
+                        temp_img = vis_img.copy()
+                        new_temp = True
+                    set_pixel(temp_img, coord, new_obstacle_color)
+                    vis_mov(temp_img, old_coord)
+                    break
+            old_coord = coord
+        if (vis_drone_coord == end_point).all():
+            return True, temp_img
+        path = bfs_path(temp_img, old_coord, end_point, bad_colors)
+        if path is None:
+            print("No PATH! Cannot Move!")
+            return False, temp_img
 
 cake = get_coords()
 mov(cake)
 drone_coord = get_coords()
 
-scan_area()
-create_end_point()
+if USE_LOADED_IMAGE and os.path.isfile('vis_img.png'):
+    vis_img = Image.open('vis_img.png')
+    vis_size = vis_img.width
+    vis_start = find_first_instance(vis_img, start_color)
+    vis_end = find_first_instance(vis_img, end_color)
+    vis_drone_coord = vis_start
+    rv_mult = np.float32( 1 / move_length )
+    rv_off = ( vis_drone_coord - np.ceil( np.multiply(drone_coord, rv_mult)) ).astype(int)
+else:
+    scan_area()
+    create_end_point()
+    vis_img.save('vis_img.png')
+
+temp = vis_img.copy()
+while True:
+    rof, temp = mov_between_coords(temp, vis_start, vis_end)
+    if not rof:
+        break
+    rof, temp = mov_between_coords(temp, vis_end, vis_start)
+    if not rof:
+        break
 
 print("DONE!!!")
 dn.manual_exit()
