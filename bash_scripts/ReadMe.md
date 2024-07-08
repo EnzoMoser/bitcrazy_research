@@ -1,1 +1,1 @@
-I set up a Python virtual environment for this project. I wrote these scripts to install modules for the virtual env, and to also run the Python scripts.
+I set up a Python virtual environment for this project. Since I was having conflicts when trying to activate the virtual environment normally, I wrote these scripts as a workaround to install modules for the virtual env, and to also run the Python scripts.
