@@ -28,9 +28,11 @@ LOG_CHECK = LOG_CHECK_IN_MS / 1000
 WAIT_TIME = LOG_CHECK    # Time to wait before checking log.
 FLYING_HEIGHT = 0.16 # In meters
 DEFAULT_VELOCITY = 0.2 # In m/s
-# It should be noted that the shutter_speed_lim was changed from ~3500 to 4000 for the second shot, in order to stop accidental blocking.
-SHUTTER_SPEED_LIM = 3500     # Shutter speed is between 900 and 8000. If the shutter speed is above shutter_speed_lim, the color below is black.
+
+# We are using the FlowDeck V2, which is a motion sensor, to detect light. We can tell what light level it's outputting based on how fast the shutter is moving.
+SHUTTER_SPEED_LIM = 3500     # Shutter speed is between 900 and 8000. If the shutter speed is above shutter_speed_lim, the color is black. Otherwise, white.
 NICE_SHUTTER_SPEED_LIM = 4000 # A nicer version when we're not mapping the area. Stops accidentally marking crossable space as obstacles.
+
 TOLERANCE_RADIUS = 0.02     # In meters. The desired drone coordinates must be within this radius.
 ACCEL_TOL = 0.04            # In m/s. The drone will keep moving to the desired coordinates until it's velocity is below this threshold 
 
