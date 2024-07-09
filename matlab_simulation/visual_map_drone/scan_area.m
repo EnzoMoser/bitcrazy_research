@@ -2,7 +2,7 @@ function [ vis_img, vis_drone_coord, offset_plus, offset_mult, drone_coord ] = s
     move_length, allowed_colors, drone_color, bad_drone_color, ...
     line_color, border_color, vis_border, vis_starting_size, vis_increase_size, ...
     unknown_color, ...
-    cur_loc_color)
+    cur_loc_color, real_fig, vis_fig)
 
 vis_start_coord = 1 + ceil(vis_starting_size / 2);
 vis_drone_coord = [vis_start_coord vis_start_coord];
@@ -25,7 +25,7 @@ ba_old = a_big;
 or_to_vis_mult = ( 1 / move_length );
 or_to_vis_offset = vis_drone_coord - ceil( or_to_vis_mult * drone_coord );
 
-if time_delay > 0; pixel_display_image(vis_img, 2); end
+if time_delay > 0; pixel_display_image(vis_img, vis_fig); end
 
 check_all = [ 1 0 0; -1 0 pi; 0 1 pi/2; 0 -1 pi*3/2];
 
@@ -44,7 +44,7 @@ while ~isempty(stack)
     end
     if ~isempty(next_coord)
         [ successfull_step, test_drone_coord ] = drone_try_move_n_display(true, img, drone_coord, drone_radius, time_delay, ...
-                    move_length, next_coord(1,3), allowed_colors, drone_color, bad_drone_color);
+                    move_length, next_coord(1,3), allowed_colors, drone_color, bad_drone_color, real_fig);
 
         vis_test_drone_coord = ceil( test_drone_coord * or_to_vis_mult ) + or_to_vis_offset;
 
@@ -60,14 +60,14 @@ while ~isempty(stack)
         end
 
         vis_img = set_pixel_color(vis_img, vis_test_drone_coord, use_color);
-        if time_delay > 0;  pixel_display_image(set_pixel_color(vis_img, vis_drone_coord, cur_loc_color), 2); end
+        if time_delay > 0;  pixel_display_image(set_pixel_color(vis_img, vis_drone_coord, cur_loc_color), vis_fig); end
 
     else
         hangle = stack(end,3) + pi;
         stack(end,:) = [];
 
         [ successfull_step, test_drone_coord ] = drone_try_move_n_display(true, img, drone_coord, drone_radius, time_delay, ...
-                    move_length, hangle, allowed_colors, drone_color, bad_drone_color);
+                    move_length, hangle, allowed_colors, drone_color, bad_drone_color, real_fig);
         vis_drone_coord = ceil( test_drone_coord * or_to_vis_mult ) + or_to_vis_offset;
         drone_coord = test_drone_coord;
         if ~successfull_step

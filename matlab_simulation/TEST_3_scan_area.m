@@ -30,16 +30,19 @@ vis_increase_size = 2; % Scale to increase size.
 % The drone will cut the image size after scanning. Set time_delay above 0
 % to see the drone mapping the area in realtime.
 
+real_fig = 3;
+vis_fig = 4;
+
 % Function to scan the area.
 [ vis_img, vis_drone_coord, offset_plus, offset_mult, drone_coord ] = scan_area(img, drone_coord, drone_radius, ...
     time_delay, move_length, walkable_colors, drone_color, ...
     bad_drone_color, line_color, border_color, vis_border, ...
     vis_starting_size, vis_increase_size, unknown_color, ...
-    current_location_color);
+    current_location_color, real_fig, vis_fig);
 
 % Display visual map from drone's perspective
-pixel_display_image(set_pixel_color(vis_img, vis_drone_coord, current_location_color), 4);
+pixel_display_image(set_pixel_color(vis_img, vis_drone_coord, current_location_color), vis_fig);
 
 % Display the "real" map of where the drone "really" is
 new_image = pixel_draw_circle(img, drone_coord, drone_radius, drone_color);
-pixel_display_image(new_image, 3);
+pixel_display_image(new_image, real_fig);

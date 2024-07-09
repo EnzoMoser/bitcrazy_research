@@ -7,7 +7,7 @@
 % Useful commands:
 clear           % Clear all variables
 clc             % Clear the command window
-close all       % Close all figures
+%close all       % Close all figures
 
 % Add all subfolders to path first:
 add_all_files_to_path;
