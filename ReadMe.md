@@ -4,6 +4,7 @@ This is the repo used for a research project. The goal of this project was to in
 This repo includes all the scripts used in this project, but the highlight is [the script that can make a Crazyflie drone both map an area and dynamically pathfind between these two points inside the mapped area](drone_scripts/custom/mapper_drone)
 
 Video demonstration (Remember to turn on subtitles):
+
 [![Crazyflie Drone Mapping and Pathfinding Demo](https://img.youtube.com/vi/a58uORNnVMc/0.jpg)](https://www.youtube.com/watch?v=a58uORNnVMc)
 
 Every folder directory has their own ReadMe file.
