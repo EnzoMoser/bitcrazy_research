@@ -1,1 +1,0 @@
-I set up a Python virtual environment for this project. Since I was having conflicts when trying to enter the virtual environment normally, I wrote these scripts as a workaround to install modules for the virtual env, and to also run the Python scripts.
